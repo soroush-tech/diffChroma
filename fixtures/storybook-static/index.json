@@ -1,0 +1,29 @@
+{
+  "v": 5,
+  "entries": {
+    "button--primary": {
+      "id": "button--primary",
+      "title": "Button",
+      "name": "Primary",
+      "type": "story"
+    },
+    "button--secondary": {
+      "id": "button--secondary",
+      "title": "Button",
+      "name": "Secondary",
+      "type": "story"
+    },
+    "card--default": {
+      "id": "card--default",
+      "title": "Card",
+      "name": "Default",
+      "type": "story"
+    },
+    "intro--docs": {
+      "id": "intro--docs",
+      "title": "Intro",
+      "name": "Docs",
+      "type": "docs"
+    }
+  }
+}

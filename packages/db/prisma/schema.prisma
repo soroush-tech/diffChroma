@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  users     User[]
+  projects  Project[]
+}
+
+model User {
+  id           String    @id @default(cuid())
+  customerId   String
+  customer     Customer  @relation(fields: [customerId], references: [id])
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         String    @default("admin")
+  createdAt    DateTime  @default(now())
+  comments     Comment[]
+}
+
+model Project {
+  id                   String     @id @default(cuid())
+  customerId           String
+  customer             Customer   @relation(fields: [customerId], references: [id])
+  name                 String
+  projectToken         String     @unique
+  repoFullName         String?
+  installationId       Int?
+  maxDiffPixelRatio    Float      @default(0)
+  autoAcceptFirstBuild Boolean    @default(true)
+  createdAt            DateTime   @default(now())
+  builds               Build[]
+  baselines            Baseline[]
+
+  @@unique([customerId, name])
+}
+
+enum BuildStatus {
+  QUEUED
+  RENDERING
+  COMPARING
+  PENDING_REVIEW
+  PASSED
+  APPROVED
+  REJECTED
+  ERROR
+}
+
+model Build {
+  id              String      @id @default(cuid())
+  projectId       String
+  project         Project     @relation(fields: [projectId], references: [id])
+  number          Int
+  commitSha       String
+  branch          String
+  prNumber        Int?
+  status          BuildStatus @default(QUEUED)
+  storybookZipKey String?
+  checkRunId      Int?
+  error           String?
+  storyCount      Int         @default(0)
+  changedCount    Int         @default(0)
+  newCount        Int         @default(0)
+  createdAt       DateTime    @default(now())
+  completedAt     DateTime?
+  snapshots       Snapshot[]
+
+  @@unique([projectId, number])
+}
+
+enum SnapshotStatus {
+  PENDING
+  NEW
+  UNCHANGED
+  CHANGED
+  APPROVED
+  REJECTED
+}
+
+model Snapshot {
+  id                 String         @id @default(cuid())
+  buildId            String
+  build              Build          @relation(fields: [buildId], references: [id])
+  storyId            String
+  storyTitle         String
+  viewport           String
+  imageKey           String
+  diffKey            String?
+  diffPixelRatio     Float?
+  baselineSnapshotId String?
+  status             SnapshotStatus @default(PENDING)
+  createdAt          DateTime       @default(now())
+  comments           Comment[]
+  baselineFor        Baseline[]
+
+  @@unique([buildId, storyId, viewport])
+}
+
+model Baseline {
+  id         String   @id @default(cuid())
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  storyId    String
+  viewport   String
+  snapshotId String
+  snapshot   Snapshot @relation(fields: [snapshotId], references: [id])
+  updatedAt  DateTime @updatedAt
+
+  @@unique([projectId, storyId, viewport])
+}
+
+model Comment {
+  id         String   @id @default(cuid())
+  snapshotId String
+  snapshot   Snapshot @relation(fields: [snapshotId], references: [id])
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  authorName String
+  body       String
+  createdAt  DateTime @default(now())
+}

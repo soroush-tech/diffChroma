@@ -1,0 +1,33 @@
+name: "DiffChroma"
+description: "Upload a Storybook build to DiffChroma for visual regression testing"
+author: "soroush-tech"
+branding:
+  icon: "eye"
+  color: "purple"
+inputs:
+  api-url:
+    description: "Base URL of the DiffChroma API (e.g. https://diffchroma.example.com)"
+    required: true
+  project-token:
+    description: "DiffChroma project token"
+    required: true
+  storybook-dir:
+    description: "Path to the built storybook-static directory"
+    required: false
+    default: "storybook-static"
+  wait:
+    description: "Wait for the render/compare pipeline and fail on rejected/error builds"
+    required: false
+    default: "false"
+outputs:
+  build-id:
+    description: "DiffChroma build id"
+  build-number:
+    description: "DiffChroma build number"
+  dashboard-url:
+    description: "URL of the build in the DiffChroma dashboard"
+  status:
+    description: "Final build status (only when wait: true)"
+runs:
+  using: "node20"
+  main: "dist/index.cjs"

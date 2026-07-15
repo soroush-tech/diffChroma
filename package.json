@@ -1,0 +1,36 @@
+{
+  "name": "diffchroma",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Self-hosted visual regression testing for Storybook",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.13.1",
+  "scripts": {
+    "dev:infra": "docker compose up -d rabbitmq postgres minio createbucket",
+    "dev:api": "pnpm --filter @diffchroma/api dev",
+    "dev:render": "pnpm --filter @diffchroma/render-worker dev",
+    "dev:compare": "pnpm --filter @diffchroma/compare-worker dev",
+    "dev:dashboard": "pnpm --filter @diffchroma/dashboard dev",
+    "db:generate": "pnpm --filter @diffchroma/db db:generate",
+    "db:migrate": "pnpm --filter @diffchroma/db db:migrate",
+    "db:seed": "pnpm --filter @diffchroma/db db:seed",
+    "simulate": "pnpm --filter @diffchroma/scripts simulate",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "sharp"
+    ]
+  }
+}

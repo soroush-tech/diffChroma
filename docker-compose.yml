@@ -1,0 +1,156 @@
+name: diffchroma
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: diffchroma
+      RABBITMQ_DEFAULT_PASS: diffchroma
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: diffchroma
+      POSTGRES_PASSWORD: diffchroma
+      POSTGRES_DB: diffchroma
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U diffchroma"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: diffchroma
+      MINIO_ROOT_PASSWORD: diffchroma123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - minio-data:/data
+
+  createbucket:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 diffchroma diffchroma123 &&
+      mc mb --ignore-existing local/diffchroma &&
+      exit 0"
+
+  # ---- application services (docker compose --profile app up) ----
+
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://diffchroma:diffchroma@postgres:5432/diffchroma
+      AMQP_URL: amqp://diffchroma:diffchroma@rabbitmq:5672
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: http://localhost:9000
+      S3_BUCKET: diffchroma
+      S3_ACCESS_KEY: diffchroma
+      S3_SECRET_KEY: diffchroma123
+      S3_FORCE_PATH_STYLE: "true"
+      API_PORT: "4000"
+      API_PUBLIC_URL: http://localhost:4000
+      DASHBOARD_URL: http://localhost:3000
+      JWT_SECRET: dev-secret-change-me
+      SEED_ADMIN_EMAIL: admin@example.com
+      SEED_ADMIN_PASSWORD: admin123
+    ports:
+      - "4000:4000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  render-worker:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: services/render-worker/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://diffchroma:diffchroma@postgres:5432/diffchroma
+      AMQP_URL: amqp://diffchroma:diffchroma@rabbitmq:5672
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: diffchroma
+      S3_ACCESS_KEY: diffchroma
+      S3_SECRET_KEY: diffchroma123
+      S3_FORCE_PATH_STYLE: "true"
+      RENDER_CONCURRENCY: "4"
+      VIEWPORTS: 1280x720
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  compare-worker:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: services/compare-worker/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://diffchroma:diffchroma@postgres:5432/diffchroma
+      AMQP_URL: amqp://diffchroma:diffchroma@rabbitmq:5672
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: diffchroma
+      S3_ACCESS_KEY: diffchroma
+      S3_SECRET_KEY: diffchroma123
+      S3_FORCE_PATH_STYLE: "true"
+      DASHBOARD_URL: http://localhost:3000
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  dashboard:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  rabbitmq-data:
+  postgres-data:
+  minio-data:

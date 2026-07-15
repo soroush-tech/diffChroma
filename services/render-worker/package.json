@@ -1,0 +1,22 @@
+{
+  "name": "@diffchroma/render-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@diffchroma/db": "workspace:*",
+    "@diffchroma/shared": "workspace:*",
+    "extract-zip": "^2.0.1",
+    "playwright": "1.54.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}

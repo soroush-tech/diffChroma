@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Storybook fixture</title>
+  <style>
+    html, body { margin: 0; padding: 24px; font-family: Arial, sans-serif; background: #ffffff; }
+    .btn { display: inline-block; border: none; border-radius: 6px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    .btn-primary { background: #4a6cf7; color: #ffffff; }
+    .btn-secondary { background: #e5e7eb; color: #111827; }
+    .card { max-width: 320px; border: 1px solid #d1d5db; border-radius: 10px; padding: 16px; }
+    .card h3 { margin: 0 0 8px; font-size: 18px; color: #111827; }
+    .card p { margin: 0; font-size: 14px; color: #4b5563; }
+  </style>
+</head>
+<body>
+  <div id="storybook-root"></div>
+  <script>
+    var stories = {
+      "button--primary": '<button class="btn btn-primary">Primary action</button>',
+      "button--secondary": '<button class="btn btn-secondary">Secondary action</button>',
+      "card--default":
+        '<div class="card"><h3>Card title</h3><p>Some descriptive card body copy that renders identically on every run.</p></div>'
+    };
+    var id = new URLSearchParams(location.search).get("id");
+    document.getElementById("storybook-root").innerHTML =
+      stories[id] || '<em>unknown story: ' + id + "</em>";
+  </script>
+</body>
+</html>

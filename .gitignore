@@ -1,0 +1,13 @@
+node_modules/
+dist/
+# the GitHub Action must ship its bundle
+!packages/action/dist/
+.next/
+*.tsbuildinfo
+.env
+.env.local
+coverage/
+tmp/
+.DS_Store
+.idea/
+next-env.d.ts
