@@ -10,6 +10,7 @@
   "packageManager": "pnpm@10.13.1",
   "scripts": {
     "dev:infra": "docker compose up -d rabbitmq postgres minio createbucket",
+    "dev:docker": "docker compose --profile app up --build",
     "dev:api": "pnpm --filter @diffchroma/api dev",
     "dev:render": "pnpm --filter @diffchroma/render-worker dev",
     "dev:compare": "pnpm --filter @diffchroma/compare-worker dev",
@@ -18,6 +19,7 @@
     "db:migrate": "pnpm --filter @diffchroma/db db:migrate",
     "db:seed": "pnpm --filter @diffchroma/db db:seed",
     "simulate": "pnpm --filter @diffchroma/scripts simulate",
+    "simulate:web": "pnpm --filter @diffchroma/scripts simulate C:/Users/Masoud/Sites/soroush.tech/apps/web/storybook-static",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck"
   },
@@ -25,12 +27,18 @@
     "typescript": "^5.5.0"
   },
   "pnpm": {
+    "overrides": {
+      "@soroush.tech/styled-system": "5.7.0"
+    },
     "onlyBuiltDependencies": [
       "@prisma/client",
       "@prisma/engines",
       "prisma",
       "esbuild",
       "sharp"
-    ]
+    ],
+    "patchedDependencies": {
+      "@soroush.tech/design-system": "patches/@soroush.tech__design-system.patch"
+    }
   }
 }

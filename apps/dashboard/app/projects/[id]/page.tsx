@@ -1,8 +1,20 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Button } from "@soroush.tech/design-system/Button";
+import { Flex } from "@soroush.tech/design-system/Flex";
+import { LinearProgress } from "@soroush.tech/design-system/LinearProgress";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from "@soroush.tech/design-system/Table";
+import { Typography } from "@soroush.tech/design-system/Typography";
+import { NavLink, StatusBadge, TokenCode } from "@/components/ui";
 import { api } from "@/lib/api";
 
 interface Project {
@@ -36,66 +48,81 @@ export default function ProjectPage() {
     void api<BuildRow[]>(`/projects/${id}/builds`).then(setBuilds).catch(() => undefined);
   }, [id]);
 
-  if (!project || !builds) return <p className="muted">Loading…</p>;
+  if (!project || !builds) return <LinearProgress />;
 
   return (
-    <>
-      <p>
-        <Link href="/">← projects</Link>
-      </p>
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <h2>{project.name}</h2>
-        <button className="secondary" onClick={() => setShowToken((v) => !v)}>
+    <Flex gap={2}>
+      <Typography variant="body2">
+        <NavLink href="/">← projects</NavLink>
+      </Typography>
+
+      <Flex flexDirection="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+        <Typography variant="h3">{project.name}</Typography>
+        <Button variant="outlined" size="sm" onClick={() => setShowToken((v) => !v)}>
           {showToken ? "Hide token" : "Show project token"}
-        </button>
-      </div>
+        </Button>
+      </Flex>
       {showToken && (
-        <p>
-          <code className="token">{project.projectToken}</code>
-        </p>
+        <Typography variant="body2">
+          <TokenCode>{project.projectToken}</TokenCode>
+        </Typography>
       )}
-      <p className="muted">
+      <Typography variant="body2" color="secondary">
         {project.repoFullName ?? "no repo linked"} ·{" "}
         {project.installationId ? "GitHub App installed" : "GitHub App not installed"}
-      </p>
+      </Typography>
 
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>status</th>
-            <th>branch</th>
-            <th>commit</th>
-            <th>changes</th>
-            <th>when</th>
-          </tr>
-        </thead>
-        <tbody>
-          {builds.map((b) => (
-            <tr key={b.id}>
-              <td>
-                <Link href={`/builds/${b.id}`}>#{b.number}</Link>
-              </td>
-              <td>
-                <span className={`badge ${b.status}`}>{b.status}</span>
-              </td>
-              <td>{b.branch}</td>
-              <td className="muted">{b.commitSha.slice(0, 8)}</td>
-              <td className="muted">
-                {b.changedCount} changed / {b.newCount} new / {b.storyCount} total
-              </td>
-              <td className="muted">{new Date(b.createdAt).toLocaleString()}</td>
-            </tr>
-          ))}
-          {builds.length === 0 && (
-            <tr>
-              <td colSpan={6} className="muted">
-                No builds yet — run the DiffChroma action or `pnpm simulate`.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </>
+      <TableContainer>
+        <Table size="sm">
+          <TableHead>
+            <TableRow>
+              <TableCell>#</TableCell>
+              <TableCell>status</TableCell>
+              <TableCell>branch</TableCell>
+              <TableCell>commit</TableCell>
+              <TableCell>changes</TableCell>
+              <TableCell>when</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {builds.map((b) => (
+              <TableRow key={b.id}>
+                <TableCell>
+                  <NavLink href={`/builds/${b.id}`}>#{b.number}</NavLink>
+                </TableCell>
+                <TableCell>
+                  <StatusBadge status={b.status} />
+                </TableCell>
+                <TableCell>{b.branch}</TableCell>
+                <TableCell>
+                  <Typography variant="caption" color="secondary" fontFamily="mono">
+                    {b.commitSha.slice(0, 8)}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="caption" color="secondary">
+                    {b.changedCount} changed / {b.newCount} new / {b.storyCount} total
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="caption" color="secondary">
+                    {new Date(b.createdAt).toLocaleString()}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ))}
+            {builds.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6}>
+                  <Typography variant="body2" color="secondary">
+                    No builds yet — run the DiffChroma action or `pnpm simulate`.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Flex>
   );
 }

@@ -1,8 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "@soroush.tech/design-system/Button";
+import { ButtonGroup } from "@soroush.tech/design-system/ButtonGroup";
+import { Card } from "@soroush.tech/design-system/Card";
+import { Flex } from "@soroush.tech/design-system/Flex";
+import { Grid } from "@soroush.tech/design-system/Grid";
+import { Image } from "@soroush.tech/design-system/Image";
+import { LinearProgress } from "@soroush.tech/design-system/LinearProgress";
+import { TextInput } from "@soroush.tech/design-system/TextInput";
+import { Typography } from "@soroush.tech/design-system/Typography";
+import { View } from "@soroush.tech/design-system/View";
+import { NavLink, StatusBadge } from "@/components/ui";
 import { api } from "@/lib/api";
 
 interface Snapshot {
@@ -39,6 +49,23 @@ interface Comment {
 const ACTIVE_STATUSES = ["QUEUED", "RENDERING", "COMPARING"];
 const FILTERS = ["ALL", "CHANGED", "NEW", "UNCHANGED", "APPROVED", "REJECTED"] as const;
 
+function Pane({ label, url, alt }: { label: string; url: string | null; alt: string }) {
+  return (
+    <View minWidth={0}>
+      <Typography variant="caption" color="secondary">
+        {label}
+      </Typography>
+      {url ? (
+        <Image src={url} alt={alt} width="100%" borderRadius="sm" style={{ background: "#fff" }} />
+      ) : (
+        <Typography variant="body2" color="secondary">
+          — none —
+        </Typography>
+      )}
+    </View>
+  );
+}
+
 export default function BuildPage() {
   const { id } = useParams<{ id: string }>();
   const [build, setBuild] = useState<BuildDetail | null>(null);
@@ -73,7 +100,7 @@ export default function BuildPage() {
     void api<Comment[]>(`/snapshots/${selectedId}/comments`).then(setComments).catch(() => undefined);
   }, [selectedId]);
 
-  if (!build) return <p className="muted">Loading…</p>;
+  if (!build) return <LinearProgress />;
 
   const visible =
     filter === "ALL" ? build.snapshots : build.snapshots.filter((s) => s.status === filter);
@@ -114,132 +141,159 @@ export default function BuildPage() {
   }
 
   return (
-    <>
-      <p>
-        <Link href={`/projects/${build.project.id}`}>← {build.project.name}</Link>
-      </p>
-      <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
-        <h2 className="row">
-          Build #{build.number} <span className={`badge ${build.status}`}>{build.status}</span>
-        </h2>
+    <Flex gap={2}>
+      <Typography variant="body2">
+        <NavLink href={`/projects/${build.project.id}`}>← {build.project.name}</NavLink>
+      </Typography>
+
+      <Flex flexDirection="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+        <Flex flexDirection="row" alignItems="center" gap={1.5}>
+          <Typography variant="h3">Build #{build.number}</Typography>
+          <StatusBadge status={build.status} />
+        </Flex>
         {reviewable && (
-          <button onClick={() => act(`/builds/${build.id}/approve-all`)}>Approve all changes</button>
+          <Button onClick={() => act(`/builds/${build.id}/approve-all`)}>
+            Approve all changes
+          </Button>
         )}
-      </div>
-      <p className="muted">
+      </Flex>
+      <Typography variant="body2" color="secondary">
         {build.branch} · {build.commitSha.slice(0, 8)} · {build.counts.changed} changed ·{" "}
         {build.counts.new} new · {build.counts.total} snapshots
-      </p>
-      {build.error && <div className="card" style={{ color: "var(--red)" }}>{build.error}</div>}
+      </Typography>
+      {build.error && (
+        <Card>
+          <Typography variant="body2" color="error" fontFamily="mono">
+            {build.error}
+          </Typography>
+        </Card>
+      )}
 
-      <div className="tabs">
+      <ButtonGroup size="sm" aria-label="Snapshot filter">
         {FILTERS.map((f) => (
-          <button key={f} className={filter === f ? "active" : ""} onClick={() => setFilter(f)}>
-            {f.toLowerCase()}
-          </button>
+          <Button key={f} variant={filter === f ? "contained" : "outlined"} onClick={() => setFilter(f)}>
+            {f.toLowerCase().replace("_", " ")}
+          </Button>
         ))}
-      </div>
+      </ButtonGroup>
 
       {selected && (
-        <div className="card" style={{ marginTop: 24 }}>
-          <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap" }}>
-            <h3>
-              {selected.storyTitle} <span className="muted">@ {selected.viewport}</span>{" "}
-              <span className={`badge ${selected.status}`}>{selected.status}</span>
+        <Card variant="bracketBox">
+          <Flex flexDirection="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+            <Flex flexDirection="row" alignItems="center" flexWrap="wrap" gap={1}>
+              <Typography variant="h5">{selected.storyTitle}</Typography>
+              <Typography variant="body2" color="secondary">
+                @ {selected.viewport}
+              </Typography>
+              <StatusBadge status={selected.status} />
               {selected.diffPixelRatio != null && (
-                <span className="muted"> diff {(selected.diffPixelRatio * 100).toFixed(2)}%</span>
+                <Typography variant="body2" color="secondary">
+                  diff {(selected.diffPixelRatio * 100).toFixed(2)}%
+                </Typography>
               )}
-            </h3>
-            <div className="row">
-              <button onClick={() => prevSnapshot && select(prevSnapshot.id)} disabled={!prevSnapshot}>
-                ‹ Prev
-              </button>
-              <span className="muted">
+            </Flex>
+            <Flex flexDirection="row" alignItems="center" gap={1}>
+              <ButtonGroup size="sm" aria-label="Snapshot navigation">
+                <Button disabled={!prevSnapshot} onClick={() => prevSnapshot && select(prevSnapshot.id)}>
+                  ‹ Prev
+                </Button>
+                <Button disabled={!nextSnapshot} onClick={() => nextSnapshot && select(nextSnapshot.id)}>
+                  Next ›
+                </Button>
+              </ButtonGroup>
+              <Typography variant="caption" color="secondary" fontFamily="mono">
                 {visibleIndex + 1} / {visible.length}
-              </span>
-              <button onClick={() => nextSnapshot && select(nextSnapshot.id)} disabled={!nextSnapshot}>
-                Next ›
-              </button>
+              </Typography>
               {["NEW", "CHANGED", "APPROVED", "REJECTED"].includes(selected.status) &&
                 !["PASSED", "ERROR", "QUEUED", "RENDERING", "COMPARING"].includes(build.status) && (
                   <>
-                    <button onClick={() => review("approve")}>Approve</button>
-                    <button className="danger" onClick={() => review("reject")}>
+                    <Button size="sm" color="success" onClick={() => review("approve")}>
+                      Approve
+                    </Button>
+                    <Button size="sm" color="error" variant="outlined" onClick={() => review("reject")}>
                       Reject
-                    </button>
+                    </Button>
                   </>
                 )}
-            </div>
-          </div>
+            </Flex>
+          </Flex>
 
-          <div className="compare-panes" style={{ marginTop: 12 }}>
-            <div>
-              <p className="muted">Baseline</p>
-              {selected.baselineUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={selected.baselineUrl} alt="baseline" />
-              ) : (
-                <p className="muted">— none (new story) —</p>
-              )}
-            </div>
-            <div>
-              <p className="muted">Current</p>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={selected.imageUrl} alt="current" />
-            </div>
-            <div>
-              <p className="muted">Diff</p>
-              {selected.diffUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={selected.diffUrl} alt="diff" />
-              ) : (
-                <p className="muted">— no diff image —</p>
-              )}
-            </div>
-          </div>
+          <Grid gridTemplateColumns="repeat(auto-fit, minmax(280px, 1fr))" gap={1.5} mt={2}>
+            <Pane label="Baseline" url={selected.baselineUrl} alt="baseline" />
+            <Pane label="Current" url={selected.imageUrl} alt="current" />
+            <Pane label="Diff" url={selected.diffUrl} alt="diff" />
+          </Grid>
 
-          <div style={{ marginTop: 16 }}>
-            <h4>Comments</h4>
+          <Flex gap={1} mt={2}>
+            <Typography variant="h6">Comments</Typography>
             {comments.map((c) => (
-              <div key={c.id} className="comment">
-                <strong>{c.authorName}</strong>{" "}
-                <span className="muted">{new Date(c.createdAt).toLocaleString()}</span>
-                <div>{c.body}</div>
-              </div>
+              <View key={c.id} borderTop="1px solid" borderColor="default" py={1}>
+                <Typography variant="body2">
+                  <strong>{c.authorName}</strong>{" "}
+                  <Typography as="span" variant="caption" color="secondary">
+                    {new Date(c.createdAt).toLocaleString()}
+                  </Typography>
+                </Typography>
+                <Typography variant="body2">{c.body}</Typography>
+              </View>
             ))}
-            {comments.length === 0 && <p className="muted">No comments yet.</p>}
-            <form onSubmit={addComment} className="row" style={{ marginTop: 8 }}>
-              <input
+            {comments.length === 0 && (
+              <Typography variant="body2" color="secondary">
+                No comments yet.
+              </Typography>
+            )}
+            <Flex as="form" onSubmit={addComment} flexDirection="row" gap={1}>
+              <TextInput
                 placeholder="Leave a comment…"
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
+                fullWidth
               />
-              <button type="submit">Post</button>
-            </form>
-          </div>
-        </div>
+              <Button type="submit" variant="outlined">
+                Post
+              </Button>
+            </Flex>
+          </Flex>
+        </Card>
       )}
 
-      <div className="shots">
+      <Grid gridTemplateColumns="repeat(auto-fill, minmax(220px, 1fr))" gap={1.5}>
         {visible.map((s) => (
-          <div
+          <Card
             key={s.id}
-            className={`card shot ${selectedId === s.id ? "selected" : ""}`}
+            variant="interactive"
+            cursor="pointer"
             onClick={() => select(s.id)}
+            borderColor={selectedId === s.id ? "primary" : undefined}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={s.imageUrl} alt={s.storyTitle} loading="lazy" />
-            <div className="row" style={{ justifyContent: "space-between", marginTop: 8 }}>
-              <span style={{ fontSize: 13, overflow: "hidden", textOverflow: "ellipsis" }}>
+            <Image
+              src={s.imageUrl}
+              alt={s.storyTitle}
+              loading="lazy"
+              width="100%"
+              height="140px"
+              objectFit="cover"
+              objectPosition="top"
+              borderRadius="sm"
+              style={{ background: "#fff" }}
+            />
+            <Flex flexDirection="row" alignItems="center" justifyContent="space-between" gap={1} mt={1}>
+              <Typography variant="caption" noWrap>
                 {s.storyTitle}
-              </span>
-              <span className={`badge ${s.status}`}>{s.status}</span>
-            </div>
-            <div className="muted">{s.viewport}</div>
-          </div>
+              </Typography>
+              <StatusBadge status={s.status} />
+            </Flex>
+            <Typography variant="caption" color="secondary" fontFamily="mono">
+              {s.viewport}
+            </Typography>
+          </Card>
         ))}
-        {visible.length === 0 && <p className="muted">No snapshots for this filter.</p>}
-      </div>
-    </>
+        {visible.length === 0 && (
+          <Typography variant="body2" color="secondary">
+            No snapshots for this filter.
+          </Typography>
+        )}
+      </Grid>
+    </Flex>
   );
 }
