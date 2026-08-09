@@ -5,6 +5,7 @@ import path from "node:path";
 import extractZip from "extract-zip";
 import { chromium, type Browser } from "playwright";
 import { prisma } from "@diffchroma/db";
+import { auditPage, loadAxeSource, persistAudit, type AxeViolation } from "./a11y.js";
 import {
   QUEUES,
   config,
@@ -57,12 +58,19 @@ const FREEZE_CSS = `
 }
 `;
 
+interface StoryShot {
+  png: Buffer;
+  violations?: AxeViolation[];
+  axeError?: string;
+}
+
 async function screenshotStory(
   browser: Browser,
   baseUrl: string,
   story: StoryEntry,
   viewport: { width: number; height: number },
-): Promise<Buffer> {
+  axeSource: string | null,
+): Promise<StoryShot> {
   const page = await browser.newPage({ viewport, reducedMotion: "reduce", deviceScaleFactor: 1 });
   try {
     await page.goto(`${baseUrl}/iframe.html?id=${encodeURIComponent(story.id)}&viewMode=story`, {
@@ -79,7 +87,14 @@ async function screenshotStory(
     );
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     await page.waitForTimeout(150); // settle layout after fonts
-    return await page.screenshot({ animations: "disabled", caret: "hide", fullPage: false });
+    const png = await page.screenshot({ animations: "disabled", caret: "hide", fullPage: false });
+    if (axeSource === null) return { png };
+    try {
+      return { png, violations: await auditPage(page, axeSource) };
+    } catch (err) {
+      // An axe failure downgrades to an errored audit row; the build goes on.
+      return { png, axeError: err instanceof Error ? err.message : String(err) };
+    }
   } finally {
     await page.close();
   }
@@ -130,7 +145,12 @@ export async function renderBuild(buildId: string, queue: QueueConnection): Prom
     // separate headless-shell download and matches the pinned Docker image.
     browser = await chromium.launch({ channel: "chromium" });
     const viewports = parseViewports();
-    const jobs = stories.flatMap((story) => viewports.map((viewport) => ({ story, viewport })));
+    // Audit accessibility once per story (it is viewport-independent), riding
+    // the first viewport's page visit so no extra navigation is needed.
+    const axeSource = project.a11yEnabled ? loadAxeSource() : null;
+    const jobs = stories.flatMap((story) =>
+      viewports.map((viewport, vi) => ({ story, viewport, runAxe: vi === 0 })),
+    );
 
     let cursor = 0;
     const workers = Array.from({ length: Math.max(1, config.RENDER_CONCURRENCY) }, async () => {
@@ -138,10 +158,16 @@ export async function renderBuild(buildId: string, queue: QueueConnection): Prom
         const index = cursor++;
         const job = jobs[index];
         if (!job) return;
-        const png = await screenshotStory(browser!, server.baseUrl, job.story, job.viewport);
+        const shot = await screenshotStory(
+          browser!,
+          server.baseUrl,
+          job.story,
+          job.viewport,
+          job.runAxe ? axeSource : null,
+        );
         const vp = viewportKey(job.viewport);
         const key = s3Keys.shot(project.customerId, project.id, build.number, job.story.id, vp);
-        await putObject(key, png, "image/png");
+        await putObject(key, shot.png, "image/png");
         await prisma.snapshot.create({
           data: {
             buildId,
@@ -152,6 +178,18 @@ export async function renderBuild(buildId: string, queue: QueueConnection): Prom
             status: "PENDING",
           },
         });
+        if (job.runAxe && axeSource !== null) {
+          await persistAudit({
+            buildId,
+            projectId: project.id,
+            branch: build.branch,
+            buildNumber: build.number,
+            story: job.story,
+            viewport: vp,
+            violations: shot.violations ?? [],
+            error: shot.axeError,
+          }).catch((err) => console.error("[render] a11y persist failed:", err));
+        }
         console.log(`[render] ${build.id} ${job.story.id} @ ${vp}`);
       }
     });
