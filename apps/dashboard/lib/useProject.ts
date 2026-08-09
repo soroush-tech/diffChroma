@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api } from "./api";
+import { api, getToken } from "./api";
 
 export interface ProjectInfo {
   id: string;
@@ -71,7 +71,9 @@ let me: Me | null = null;
 export function useMe(): Me | null {
   useCacheVersion();
   useEffect(() => {
-    if (me) return;
+    // Signed-out visitors (e.g. the login page) must not probe /me — the 401
+    // handling would bounce the page.
+    if (me || getToken() === null) return;
     let alive = true;
     void api<Me>("/me")
       .then((user) => {

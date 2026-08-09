@@ -31,7 +31,9 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   });
   if (res.status === 401 && typeof window !== "undefined" && !path.startsWith("/auth/")) {
     setToken(null);
-    window.location.href = "/login";
+    // Never hard-redirect while already on the login page — that reloads it
+    // in a loop when a stray unauthenticated call 401s.
+    if (window.location.pathname !== "/login") window.location.href = "/login";
     throw new ApiError(401, "unauthorized");
   }
   if (!res.ok) {
