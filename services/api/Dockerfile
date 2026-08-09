@@ -5,7 +5,6 @@ RUN corepack enable
 
 WORKDIR /app
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.base.json ./
-COPY patches ./patches
 COPY packages ./packages
 COPY services/api ./services/api
 
