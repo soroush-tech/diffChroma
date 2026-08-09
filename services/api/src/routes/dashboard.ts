@@ -2,14 +2,34 @@ import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
-import { prisma, type Snapshot } from "@diffchroma/db";
+import { Prisma, prisma, type Snapshot } from "@diffchroma/db";
 import { presignGet } from "@diffchroma/shared";
 import { requireUser, signSession } from "../auth.js";
+import { buildLibraryTree, componentTitleOf, type LibraryEntry } from "../lib/libraryTree.js";
 import { resolveBuildIfComplete } from "../lib/resolution.js";
 
 const loginSchema = z.object({ email: z.string().email(), password: z.string().min(1) });
 const createProjectSchema = z.object({ name: z.string().min(1), repoFullName: z.string().optional() });
 const commentSchema = z.object({ body: z.string().min(1).max(5000) });
+const patchProjectSchema = z
+  .object({
+    name: z.string().min(1).max(100).optional(),
+    maxDiffPixelRatio: z.number().min(0).max(1).optional(),
+    autoAcceptFirstBuild: z.boolean().optional(),
+    a11yEnabled: z.boolean().optional(),
+  })
+  .refine((o) => Object.keys(o).length > 0, { message: "empty patch" });
+
+export async function getProjectForUser(req: FastifyRequest, reply: FastifyReply, id: string) {
+  const project = await prisma.project.findFirst({
+    where: { id, customerId: req.user!.customerId },
+  });
+  if (!project) {
+    reply.code(404).send({ error: "not found" });
+    return null;
+  }
+  return project;
+}
 
 async function snapshotView(snap: Snapshot, baselineImageKeys: Map<string, string>) {
   return {
@@ -79,23 +99,132 @@ export function registerDashboardRoutes(app: FastifyInstance): void {
 
   app.get("/projects/:id", { preHandler: requireUser }, async (req, reply) => {
     const { id } = req.params as { id: string };
-    const project = await prisma.project.findFirst({
-      where: { id, customerId: req.user!.customerId },
-    });
-    if (!project) return reply.code(404).send({ error: "not found" });
+    const project = await getProjectForUser(req, reply, id);
+    if (!project) return;
     return project;
+  });
+
+  app.patch("/projects/:id", { preHandler: requireUser }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const project = await getProjectForUser(req, reply, id);
+    if (!project) return;
+    const patch = patchProjectSchema.parse(req.body);
+    try {
+      return await prisma.project.update({ where: { id }, data: patch });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        return reply.code(409).send({ error: "name already in use" });
+      }
+      throw err;
+    }
   });
 
   app.get("/projects/:id/builds", { preHandler: requireUser }, async (req, reply) => {
     const { id } = req.params as { id: string };
-    const project = await prisma.project.findFirst({ where: { id, customerId: req.user!.customerId } });
-    if (!project) return reply.code(404).send({ error: "not found" });
+    const project = await getProjectForUser(req, reply, id);
+    if (!project) return;
     const builds = await prisma.build.findMany({
       where: { projectId: id },
       orderBy: { number: "desc" },
       take: 50,
     });
     return builds;
+  });
+
+  app.get("/projects/:id/usage", { preHandler: requireUser }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const project = await getProjectForUser(req, reply, id);
+    if (!project) return;
+    const now = new Date();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const [visual, a11y, builds, baselines] = await Promise.all([
+      prisma.snapshot.count({
+        where: { build: { projectId: id }, createdAt: { gte: monthStart } },
+      }),
+      prisma.a11yAudit.count({
+        where: { build: { projectId: id }, createdAt: { gte: monthStart } },
+      }),
+      prisma.build.count({ where: { projectId: id, createdAt: { gte: monthStart } } }),
+      prisma.baseline.findMany({
+        where: { projectId: id },
+        select: { snapshot: { select: { storyTitle: true } } },
+      }),
+    ]);
+    const componentCount = new Set(baselines.map((b) => componentTitleOf(b.snapshot.storyTitle)))
+      .size;
+    return {
+      month: now.toISOString().slice(0, 7),
+      snapshotsThisMonth: visual + a11y,
+      visualThisMonth: visual,
+      a11yThisMonth: a11y,
+      buildsThisMonth: builds,
+      componentCount,
+    };
+  });
+
+  app.get("/projects/:id/library", { preHandler: requireUser }, async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const project = await getProjectForUser(req, reply, id);
+    if (!project) return;
+    const [latestBuild, baselines] = await Promise.all([
+      prisma.build.findFirst({
+        where: { projectId: id },
+        orderBy: { number: "desc" },
+        select: { id: true, number: true, branch: true },
+      }),
+      prisma.baseline.findMany({
+        where: { projectId: id },
+        select: {
+          storyId: true,
+          viewport: true,
+          updatedAt: true,
+          snapshot: {
+            select: {
+              id: true,
+              storyTitle: true,
+              imageKey: true,
+              buildId: true,
+              build: { select: { number: true } },
+            },
+          },
+        },
+      }),
+    ]);
+    const entries: LibraryEntry[] = baselines.map((b) => ({
+      storyId: b.storyId,
+      storyTitle: b.snapshot.storyTitle,
+      viewport: b.viewport,
+      snapshotId: b.snapshot.id,
+      imageKey: b.snapshot.imageKey,
+      buildId: b.snapshot.buildId,
+      buildNumber: b.snapshot.build.number,
+      updatedAt: b.updatedAt,
+    }));
+    const tree = buildLibraryTree(entries);
+    const components = await Promise.all(
+      tree.components.map(async (component) => ({
+        ...component,
+        stories: await Promise.all(
+          component.stories.map(async (story) => ({
+            storyId: story.storyId,
+            name: story.name,
+            viewports: await Promise.all(
+              story.viewports.map(async ({ imageKey, ...vp }) => ({
+                ...vp,
+                imageUrl: await presignGet(imageKey),
+              })),
+            ),
+          })),
+        ),
+      })),
+    );
+    return {
+      latest: latestBuild
+        ? { buildId: latestBuild.id, buildNumber: latestBuild.number, branch: latestBuild.branch }
+        : null,
+      totals: tree.totals,
+      components,
+    };
   });
 
   // ---- builds & snapshots ----
