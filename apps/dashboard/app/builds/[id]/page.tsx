@@ -3,9 +3,9 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Card } from "@soroush.tech/design-system/Card";
-import { LinearProgress } from "@soroush.tech/design-system/LinearProgress";
 import { Typography } from "@soroush.tech/design-system/Typography";
 import { Main } from "@/components/chrome/Main";
+import { LinesSkeleton } from "@/components/Skeletons";
 import { NavLink } from "@/components/ui";
 import { api } from "@/lib/api";
 
@@ -45,7 +45,7 @@ export default function LegacyBuildRedirect() {
   }
   return (
     <Main>
-      <LinearProgress />
+      <LinesSkeleton lines={4} />
     </Main>
   );
 }

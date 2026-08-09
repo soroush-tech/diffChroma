@@ -1,98 +1,71 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Flex } from "@soroush.tech/design-system/Flex";
-import { LinearProgress } from "@soroush.tech/design-system/LinearProgress";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from "@soroush.tech/design-system/Table";
+import { useEffect, useMemo, useState } from "react";
 import { Typography } from "@soroush.tech/design-system/Typography";
-import { NavLink, StatusBadge } from "@/components/ui";
+import { BranchFilter, type BranchOption } from "@/components/BranchFilter";
+import { BuildListRow, statusTone, type BuildRow } from "@/components/BuildList";
+import { PageCard } from "@/components/PageCard";
+import { PageHeader } from "@/components/PageHeader";
+import { BuildRowsSkeleton } from "@/components/Skeletons";
 import { api } from "@/lib/api";
-
-interface BuildRow {
-  id: string;
-  number: number;
-  status: string;
-  branch: string;
-  commitSha: string;
-  changedCount: number;
-  newCount: number;
-  storyCount: number;
-  createdAt: string;
-}
 
 export default function BuildsPage() {
   const { id } = useParams<{ id: string }>();
   const [builds, setBuilds] = useState<BuildRow[] | null>(null);
+  const [branch, setBranch] = useState<string | null>(null);
 
   useEffect(() => {
     void api<BuildRow[]>(`/projects/${id}/builds`).then(setBuilds).catch(() => undefined);
   }, [id]);
 
-  if (!builds) return <LinearProgress />;
+  // Branch list with each branch's latest-build health, newest first.
+  const branches = useMemo<BranchOption[]>(() => {
+    if (!builds) return [];
+    const seen = new Map<string, BranchOption>();
+    for (const build of builds) {
+      if (!seen.has(build.branch)) {
+        seen.set(build.branch, { name: build.branch, tone: statusTone(build.status) });
+      }
+    }
+    return [...seen.values()];
+  }, [builds]);
+
+  const visible = useMemo(
+    () => (builds ?? []).filter((b) => branch === null || b.branch === branch),
+    [builds, branch],
+  );
+
+  if (!builds) {
+    return (
+      <>
+        <PageHeader title="Builds" />
+        <PageCard flush>
+          <BuildRowsSkeleton />
+        </PageCard>
+      </>
+    );
+  }
 
   return (
-    <Flex gap={2}>
-      <Typography variant="h3">Builds</Typography>
+    <>
+      <PageHeader
+        title="Builds"
+        actions={<BranchFilter branches={branches} selected={branch} onChange={setBranch} />}
+      />
 
-      <TableContainer>
-        <Table size="sm">
-          <TableHead>
-            <TableRow>
-              <TableCell>#</TableCell>
-              <TableCell>status</TableCell>
-              <TableCell>branch</TableCell>
-              <TableCell>commit</TableCell>
-              <TableCell>changes</TableCell>
-              <TableCell>when</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {builds.map((b) => (
-              <TableRow key={b.id}>
-                <TableCell>
-                  <NavLink href={`/projects/${id}/builds/${b.id}`}>#{b.number}</NavLink>
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={b.status} />
-                </TableCell>
-                <TableCell>{b.branch}</TableCell>
-                <TableCell>
-                  <Typography variant="caption" color="secondary" fontFamily="mono">
-                    {b.commitSha.slice(0, 8)}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="caption" color="secondary">
-                    {b.changedCount} changed / {b.newCount} new / {b.storyCount} total
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="caption" color="secondary">
-                    {new Date(b.createdAt).toLocaleString()}
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ))}
-            {builds.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6}>
-                  <Typography variant="body2" color="secondary">
-                    No builds yet — run the DiffChroma action or `pnpm simulate`.
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Flex>
+      <PageCard flush>
+        {visible.map((build) => (
+          <BuildListRow key={build.id} projectId={id} build={build} />
+        ))}
+        {visible.length === 0 && (
+          <Typography variant="body2" color="secondary" p={3} as="div">
+            {branch
+              ? `No builds on ${branch} yet.`
+              : "No builds yet — run the DiffChroma action or `pnpm simulate`."}
+          </Typography>
+        )}
+      </PageCard>
+    </>
   );
 }

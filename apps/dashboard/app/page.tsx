@@ -5,7 +5,7 @@ import { Button } from "@soroush.tech/design-system/Button";
 import { Card } from "@soroush.tech/design-system/Card";
 import { Flex } from "@soroush.tech/design-system/Flex";
 import { Grid } from "@soroush.tech/design-system/Grid";
-import { LinearProgress } from "@soroush.tech/design-system/LinearProgress";
+import { CardGridSkeleton } from "@/components/Skeletons";
 import { TextInput } from "@soroush.tech/design-system/TextInput";
 import { Typography } from "@soroush.tech/design-system/Typography";
 import { Main } from "@/components/chrome/Main";
@@ -44,7 +44,7 @@ export default function ProjectsPage() {
   if (!projects)
     return (
       <Main>
-        <LinearProgress />
+        <CardGridSkeleton />
       </Main>
     );
 

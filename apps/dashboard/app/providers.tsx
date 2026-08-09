@@ -5,6 +5,7 @@ import { useState } from "react";
 import createCache from "@emotion/cache";
 import { CacheProvider, Global } from "@soroush.tech/design-system/engine";
 import { ThemeProvider } from "@soroush.tech/design-system/theme";
+import { light } from "@/theme";
 
 /** Collects emotion styles rendered on the server and re-injects them into the
  *  HTML stream, so server-rendered markup arrives already styled. */
@@ -47,7 +48,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   const cache = useEmotionRegistry();
   return (
     <CacheProvider value={cache}>
-      <ThemeProvider>
+      <ThemeProvider theme={light}>
         <Global
           styles={(theme) => ({
             "*, *::before, *::after": { boxSizing: "border-box" },

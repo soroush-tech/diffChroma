@@ -2,13 +2,15 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { styled } from "@soroush.tech/design-system";
 import { Button } from "@soroush.tech/design-system/Button";
-import { Card } from "@soroush.tech/design-system/Card";
 import { Flex } from "@soroush.tech/design-system/Flex";
-import { LinearProgress } from "@soroush.tech/design-system/LinearProgress";
+import { SettingRowsSkeleton, StatStripSkeleton } from "@/components/Skeletons";
 import { Switch } from "@soroush.tech/design-system/Switch";
 import { TextInput } from "@soroush.tech/design-system/TextInput";
 import { Typography } from "@soroush.tech/design-system/Typography";
+import { PageCard } from "@/components/PageCard";
+import { PageHeader } from "@/components/PageHeader";
 import { SectionLabel } from "@/components/SectionLabel";
 import { SettingCard, SettingGroup } from "@/components/SettingCard";
 import { StatStrip } from "@/components/StatStrip";
@@ -16,6 +18,18 @@ import { TabNav } from "@/components/TabNav";
 import { NavLink, TokenCode } from "@/components/ui";
 import { ApiError, api } from "@/lib/api";
 import { primeProject, useProject, type ProjectInfo } from "@/lib/useProject";
+
+const Content = styled("div")({
+  marginTop: "30px",
+  marginBottom: "3rem",
+  display: "flex",
+  flexDirection: "column",
+  gap: "3rem",
+});
+
+const Group = styled("section")({
+  "& > h3": { marginBottom: "12px" },
+});
 
 interface Usage {
   month: string;
@@ -77,15 +91,26 @@ export default function ManagePage() {
     });
   }
 
-  if (!project) return <LinearProgress />;
+  if (!project) {
+    return (
+      <>
+        <PageHeader title="Manage" />
+        <Content>
+          <SettingGroup>
+            <SettingRowsSkeleton />
+          </SettingGroup>
+        </Content>
+      </>
+    );
+  }
 
   const githubAppUrl = process.env.NEXT_PUBLIC_GITHUB_APP_URL;
   const name = nameDraft ?? project.name;
   const threshold = thresholdDraft ?? String(project.maxDiffPixelRatio);
 
   return (
-    <Flex gap={2}>
-      <Typography variant="h3">Manage</Typography>
+    <>
+      <PageHeader title="Manage" />
 
       <TabNav
         tabs={TABS}
@@ -97,14 +122,14 @@ export default function ManagePage() {
       />
 
       {error && (
-        <Typography variant="body2" color="error">
+        <Typography variant="body2" color="error" mt={2}>
           {error}
         </Typography>
       )}
 
       {tab === "automate" && (
-        <Flex gap={3} mt={1}>
-          <Flex gap={1.5}>
+        <Content>
+          <Group>
             <SectionLabel>Continuous integration</SectionLabel>
             <SettingGroup>
               <SettingCard
@@ -172,11 +197,11 @@ export default function ManagePage() {
                 }
               />
             </SettingGroup>
-          </Flex>
+          </Group>
 
-          <Flex gap={1.5}>
+          <Group>
             <SectionLabel>Usage</SectionLabel>
-            <Card>
+            <PageCard>
               {usage ? (
                 <Flex gap={1.5}>
                   <StatStrip
@@ -193,15 +218,15 @@ export default function ManagePage() {
                   </Typography>
                 </Flex>
               ) : (
-                <LinearProgress />
+                <StatStripSkeleton />
               )}
-            </Card>
-          </Flex>
-        </Flex>
+            </PageCard>
+          </Group>
+        </Content>
       )}
 
       {tab === "configure" && (
-        <Flex gap={3} mt={1}>
+        <Content>
           <SettingGroup>
             <SettingCard
               icon="edit_note"
@@ -278,8 +303,8 @@ export default function ManagePage() {
               }
             />
           </SettingGroup>
-        </Flex>
+        </Content>
       )}
-    </Flex>
+    </>
   );
 }

@@ -2,8 +2,8 @@
 
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { styled } from "@soroush.tech/design-system";
 import { Button } from "@soroush.tech/design-system/Button";
-import { Card } from "@soroush.tech/design-system/Card";
 import { Flex } from "@soroush.tech/design-system/Flex";
 import { NativeSelect } from "@soroush.tech/design-system/NativeSelect";
 import { Skeleton } from "@soroush.tech/design-system/Skeleton";
@@ -11,6 +11,8 @@ import { Typography } from "@soroush.tech/design-system/Typography";
 import { A11ySummary } from "@/components/a11y/A11ySummary";
 import { ViolationsChart } from "@/components/a11y/ViolationsChart";
 import { ViolationsTable } from "@/components/a11y/ViolationsTable";
+import { PageCard } from "@/components/PageCard";
+import { PageHeader } from "@/components/PageHeader";
 import { NavLink } from "@/components/ui";
 import { api } from "@/lib/api";
 import type {
@@ -20,10 +22,31 @@ import type {
 } from "@/lib/a11y";
 
 const RANGES = [
-  { label: "Last week", value: "7" },
-  { label: "Last 2 weeks", value: "14" },
-  { label: "Last month", value: "30" },
+  { label: "1 week", value: "7" },
+  { label: "2 weeks", value: "14" },
+  { label: "1 month", value: "30" },
 ];
+
+const Stack = styled("div")({
+  display: "flex",
+  flexDirection: "column",
+  gap: "24px",
+});
+
+const ChartHead = styled("div")(({ theme }) => ({
+  display: "flex",
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "10px",
+  marginBottom: "23px",
+  "& > h2": {
+    margin: 0,
+    fontSize: "14px",
+    fontWeight: theme.fontWeights.semiBold,
+    color: theme.text.initial,
+  },
+}));
 
 export default function A11yPage() {
   const { id } = useParams<{ id: string }>();
@@ -69,44 +92,49 @@ export default function A11yPage() {
   const disabled = summary !== null && !summary.enabled;
 
   return (
-    <Flex gap={2}>
-      <Flex flexDirection="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
-        <Typography variant="h3">Accessibility</Typography>
-        <Flex flexDirection="row" alignItems="center" gap={1}>
-          {summary && summary.branches.length > 0 && (
-            <NativeSelect
-              aria-label="Branch"
-              size="sm"
-              options={summary.branches.map((b) => ({ label: b, value: b }))}
-              value={summary.branch}
-              onChange={(value) => setBranch(String(value))}
-            />
-          )}
-          {summary?.build && (
-            <Typography variant="body2">
-              <NavLink href={`/projects/${id}/builds/${summary.build.id}`}>
-                Latest audited build #{summary.build.number} →
-              </NavLink>
-            </Typography>
-          )}
-        </Flex>
-      </Flex>
+    <>
+      <PageHeader
+        title="Accessibility"
+        actions={
+          <>
+            {summary && summary.branches.length > 0 && (
+              <NativeSelect
+                aria-label="Branch"
+                size="sm"
+                options={summary.branches.map((b) => ({ label: b, value: b }))}
+                value={summary.branch}
+                onChange={(value) => setBranch(String(value))}
+              />
+            )}
+            {summary?.build && (
+              <Typography variant="body2">
+                <NavLink href={`/projects/${id}/builds/${summary.build.id}`}>
+                  Latest audited build #{summary.build.number} →
+                </NavLink>
+              </Typography>
+            )}
+          </>
+        }
+      />
 
       {disabled && (
-        <Card variant="bracketBox" title="Accessibility tests are disabled" maxWidth="560px">
-          <Typography variant="body2" color="secondary" mt={1} mb={2}>
+        <PageCard style={{ maxWidth: "560px" }}>
+          <Typography variant="h5" as="h2" m={0} mb={1}>
+            Accessibility tests are disabled
+          </Typography>
+          <Typography variant="body2" color="secondary" mb={2}>
             Enable accessibility tests to run an axe audit on every build and track violations
             over time.
           </Typography>
           <Button size="sm" href={`/projects/${id}/manage?tab=configure`}>
             Open Manage
           </Button>
-        </Card>
+        </PageCard>
       )}
 
       {!disabled && (
-        <>
-          <Card>
+        <Stack>
+          <PageCard>
             {summary ? (
               summary.build ? (
                 <A11ySummary totals={summary.totals} />
@@ -119,10 +147,11 @@ export default function A11yPage() {
             ) : (
               <Skeleton variant="rectangular" height="64px" />
             )}
-          </Card>
+          </PageCard>
 
-          <Card title="Accessibility violations">
-            <Flex flexDirection="row" justifyContent="flex-end" mb={1}>
+          <PageCard>
+            <ChartHead>
+              <h2>Accessibility violations</h2>
               <NativeSelect
                 aria-label="Date range"
                 size="sm"
@@ -133,15 +162,15 @@ export default function A11yPage() {
                   if (v === "7" || v === "14" || v === "30") setDays(v);
                 }}
               />
-            </Flex>
+            </ChartHead>
             {series ? (
               <ViolationsChart points={series.points} />
             ) : (
               <Skeleton variant="rectangular" height="240px" />
             )}
-          </Card>
+          </PageCard>
 
-          <Card>
+          <PageCard flush>
             {violations ? (
               <ViolationsTable
                 key={`${groupBy}:${violations.branch}`}
@@ -154,11 +183,13 @@ export default function A11yPage() {
                 branch={violations.branch}
               />
             ) : (
-              <Skeleton variant="rectangular" height="200px" />
+              <Flex p={3}>
+                <Skeleton variant="rectangular" height="200px" />
+              </Flex>
             )}
-          </Card>
-        </>
+          </PageCard>
+        </Stack>
       )}
-    </Flex>
+    </>
   );
 }

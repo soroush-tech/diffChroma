@@ -2,19 +2,44 @@
 
 import { styled } from "@soroush.tech/design-system";
 import type { PaletteColor } from "@soroush.tech/design-system";
-import { Card } from "@soroush.tech/design-system/Card";
 import { Flex } from "@soroush.tech/design-system/Flex";
 import { Icon, type IconName } from "@soroush.tech/design-system/Icon";
 import { Link } from "@soroush.tech/design-system/Link";
-import { Typography } from "@soroush.tech/design-system/Typography";
+import { PageCard } from "./PageCard";
 
 const Row = styled("section")(({ theme }) => ({
   display: "flex",
   flexWrap: "wrap",
-  gap: "16px",
-  padding: "24px",
+  padding: "20px",
   borderBottom: `${theme.borderWidths.thin} solid ${theme.border.default}`,
   "&:last-of-type": { borderBottom: "none" },
+  "@media (min-width: 800px)": { padding: "30px" },
+}));
+
+const IconBox = styled("div")({
+  width: "48px",
+  height: "48px",
+  flexShrink: 0,
+  marginRight: "20px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+const Body = styled("div")({
+  flex: "1 1 240px",
+  maxWidth: "600px",
+  paddingRight: "30px",
+  fontSize: "14px",
+  lineHeight: "20px",
+});
+
+const TitleRow = styled("h4")(({ theme }) => ({
+  margin: "0 0 0.125rem",
+  fontSize: "14px",
+  lineHeight: "20px",
+  fontWeight: theme.fontWeights.bold,
+  color: theme.text.initial,
 }));
 
 const StatusWord = styled("span", {
@@ -23,6 +48,27 @@ const StatusWord = styled("span", {
   fontWeight: theme.fontWeights.normal,
   color: theme.palette[tone].main,
 }));
+
+const Description = styled("p")(({ theme }) => ({
+  margin: 0,
+  color: theme.text.secondary,
+}));
+
+const Actions = styled("div")({
+  display: "flex",
+  flexDirection: "row",
+  alignItems: "flex-start",
+  justifyContent: "flex-end",
+  gap: "10px",
+  marginTop: "1rem",
+  width: "100%",
+  "@media (min-width: 800px)": {
+    flex: "0 1 auto",
+    width: "auto",
+    marginTop: 0,
+    marginLeft: "auto",
+  },
+});
 
 export interface SettingStatus {
   label: string;
@@ -49,11 +95,11 @@ export function SettingCard({
 }) {
   return (
     <Row>
-      <Flex flexShrink={0} pt={0.5}>
+      <IconBox>
         <Icon name={icon} size="2rem" color="secondary" />
-      </Flex>
-      <Flex gap={0.5} maxWidth="600px" flexGrow={1} minWidth="240px">
-        <Typography variant="body1" fontWeight="bold" as="h4" m={0}>
+      </IconBox>
+      <Body>
+        <TitleRow>
           {title}
           {status && (
             <>
@@ -61,27 +107,23 @@ export function SettingCard({
               <StatusWord tone={status.tone}>{status.label}</StatusWord>
             </>
           )}
-        </Typography>
-        <Typography variant="body2" color="secondary">
+        </TitleRow>
+        <Description>
           {description}{" "}
           {learnMoreHref && (
             <Link href={learnMoreHref} target="_blank" rel="noreferrer">
               Learn more
             </Link>
           )}
-        </Typography>
-        {children}
-      </Flex>
-      {action && (
-        <Flex flexDirection="row" alignItems="flex-start" justifyContent="flex-end" ml="auto">
-          {action}
-        </Flex>
-      )}
+        </Description>
+        {children && <Flex mt={1}>{children}</Flex>}
+      </Body>
+      {action && <Actions>{action}</Actions>}
     </Row>
   );
 }
 
 /** Card that stacks SettingCard rows with hairline separators. */
 export function SettingGroup({ children }: { children: React.ReactNode }) {
-  return <Card p={0}>{children}</Card>;
+  return <PageCard flush>{children}</PageCard>;
 }

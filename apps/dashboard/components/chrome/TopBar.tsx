@@ -46,7 +46,16 @@ export function TopBar() {
   }
 
   return (
-    <AppBar position="sticky" top={0} height={TOPBAR_HEIGHT} size="sm">
+    <AppBar
+      position="sticky"
+      top={0}
+      height={TOPBAR_HEIGHT}
+      size="sm"
+      color="appBar"
+      blur
+      borderBottom="1px solid"
+      borderColor="default"
+    >
       <Flex
         flexDirection="row"
         alignItems="center"

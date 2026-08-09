@@ -8,7 +8,7 @@ import { Card } from "@soroush.tech/design-system/Card";
 import { Flex } from "@soroush.tech/design-system/Flex";
 import { Grid } from "@soroush.tech/design-system/Grid";
 import { Image } from "@soroush.tech/design-system/Image";
-import { LinearProgress } from "@soroush.tech/design-system/LinearProgress";
+import { CardGridSkeleton, LinesSkeleton } from "@/components/Skeletons";
 import { TextInput } from "@soroush.tech/design-system/TextInput";
 import { Typography } from "@soroush.tech/design-system/Typography";
 import { View } from "@soroush.tech/design-system/View";
@@ -100,7 +100,14 @@ export default function BuildPage() {
     void api<Comment[]>(`/snapshots/${selectedId}/comments`).then(setComments).catch(() => undefined);
   }, [selectedId]);
 
-  if (!build) return <LinearProgress />;
+  if (!build) {
+    return (
+      <Flex gap={3} mt={3}>
+        <LinesSkeleton lines={2} width="40%" />
+        <CardGridSkeleton tiles={8} height="180px" />
+      </Flex>
+    );
+  }
 
   const visible =
     filter === "ALL" ? build.snapshots : build.snapshots.filter((s) => s.status === filter);

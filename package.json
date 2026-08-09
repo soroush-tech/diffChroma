@@ -9,6 +9,7 @@
   },
   "packageManager": "pnpm@10.13.1",
   "scripts": {
+    "dev": "pnpm --parallel --filter @diffchroma/api --filter @diffchroma/render-worker --filter @diffchroma/compare-worker --filter @diffchroma/dashboard dev",
     "dev:infra": "docker compose up -d rabbitmq postgres minio createbucket",
     "dev:docker": "docker compose --profile app up --build",
     "dev:api": "pnpm --filter @diffchroma/api dev",

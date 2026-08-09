@@ -1,9 +1,9 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Sidebar, SidebarItem } from "@soroush.tech/design-system/Sidebar";
-import type { IconName } from "@soroush.tech/design-system/Icon";
+import NextLink from "next/link";
+import { usePathname } from "next/navigation";
+import { styled } from "@soroush.tech/design-system";
+import { Icon, type IconName } from "@soroush.tech/design-system/Icon";
 import { TOPBAR_HEIGHT } from "./constants";
 
 const ITEMS: { segment: string; label: string; icon: IconName }[] = [
@@ -13,65 +13,68 @@ const ITEMS: { segment: string; label: string; icon: IconName }[] = [
   { segment: "manage", label: "Manage", icon: "settings_input_component" },
 ];
 
-const RAIL_OPEN_KEY = "dc_rail_open";
+const Rail = styled("nav")(({ theme }) => ({
+  display: "flex",
+  flexDirection: "row",
+  justifyContent: "space-evenly",
+  borderBottom: `${theme.borderWidths.thin} solid ${theme.border.default}`,
+  "@media (min-width: 600px)": {
+    flex: "0 1 60px",
+    minWidth: "60px",
+    flexDirection: "column",
+    justifyContent: "flex-start",
+    borderBottom: "none",
+    borderRight: `${theme.borderWidths.thin} solid ${theme.border.default}`,
+    position: "sticky",
+    top: TOPBAR_HEIGHT,
+    height: `calc(100vh - ${TOPBAR_HEIGHT})`,
+    alignSelf: "flex-start",
+    paddingTop: "2rem",
+  },
+}));
+
+const Item = styled(NextLink, {
+  shouldForwardProp: (prop) => prop !== "isActive",
+})<{ isActive: boolean }>(({ theme, isActive }) => ({
+  display: "block",
+  textAlign: "center",
+  textDecoration: "none",
+  color: isActive ? theme.palette.primary.main : theme.text.secondary,
+  margin: "0.5rem 0",
+  transition: "transform 150ms, color 150ms",
+  "& .rail-icon": { display: "none" },
+  "& .rail-label": {
+    display: "block",
+    fontSize: "14px",
+    lineHeight: "20px",
+    fontWeight: isActive ? theme.fontWeights.bold : theme.fontWeights.normal,
+  },
+  "&:hover": { color: theme.palette.primary.main, transform: "translateY(-1px)" },
+  "@media (min-width: 600px)": {
+    margin: "0 0 2.25rem",
+    "& .rail-icon": { display: "inline-block" },
+    "& .rail-label": { fontSize: "11px", lineHeight: "16px", marginTop: "0.5rem" },
+  },
+}));
 
 export function ProjectRail({ projectId }: { projectId: string }) {
-  const router = useRouter();
   const pathname = usePathname();
-  // Default collapsed; the persisted preference loads post-hydration so server
-  // and client first paint agree.
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    setOpen(window.localStorage.getItem(RAIL_OPEN_KEY) === "1");
-  }, []);
-
-  function toggle() {
-    setOpen((prev) => {
-      const next = !prev;
-      window.localStorage.setItem(RAIL_OPEN_KEY, next ? "1" : "0");
-      return next;
-    });
-  }
-
   // /projects/[id]/<segment>; build detail keeps Builds lit.
   const active = pathname.split("/")[3] ?? "builds";
 
   return (
-    <Sidebar
-      aria-label="Project navigation"
-      isOpen={open}
-      collapsedWidth="3.5rem"
-      expandedWidth="11rem"
-      position="sticky"
-      top={TOPBAR_HEIGHT}
-      height={`calc(100vh - ${TOPBAR_HEIGHT})`}
-      alignSelf="flex-start"
-      flexShrink={0}
-      pt={2}
-    >
-      {ITEMS.map((item) => {
-        const href = `/projects/${projectId}/${item.segment}`;
-        return (
-          <SidebarItem
-            key={item.segment}
-            icon={item.icon}
-            label={item.label}
-            isSelected={active === item.segment}
-            href={href}
-            onClick={(e: React.MouseEvent) => {
-              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-              e.preventDefault();
-              router.push(href);
-            }}
-          />
-        );
-      })}
-      <SidebarItem
-        icon={open ? "chevron_left" : "chevron_right"}
-        label={open ? "Collapse" : "Expand"}
-        onClick={toggle}
-        mt="auto"
-      />
-    </Sidebar>
+    <Rail aria-label="Project navigation">
+      {ITEMS.map((item) => (
+        <Item
+          key={item.segment}
+          href={`/projects/${projectId}/${item.segment}`}
+          isActive={active === item.segment}
+          aria-current={active === item.segment ? "page" : undefined}
+        >
+          <Icon className="rail-icon" name={item.icon} size="20px" color="inherit" />
+          <span className="rail-label">{item.label}</span>
+        </Item>
+      ))}
+    </Rail>
   );
 }

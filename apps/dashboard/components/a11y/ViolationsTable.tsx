@@ -2,43 +2,98 @@
 
 import { Fragment, useState } from "react";
 import { styled } from "@soroush.tech/design-system";
+import { alpha } from "@soroush.tech/design-system/utils";
 import { Button } from "@soroush.tech/design-system/Button";
-import { Flex } from "@soroush.tech/design-system/Flex";
 import { Icon } from "@soroush.tech/design-system/Icon";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from "@soroush.tech/design-system/Table";
 import { ToggleButton, ToggleButtonGroup } from "@soroush.tech/design-system/ToggleButton";
-import { Typography } from "@soroush.tech/design-system/Typography";
 import { SearchInput } from "@/components/SearchInput";
 import { ImpactPill } from "./ImpactPill";
 import { buildA11yCsv, downloadCsv, type A11yRow } from "@/lib/a11y";
 
+const Toolbar = styled("div")({
+  display: "flex",
+  flexDirection: "row",
+  alignItems: "center",
+  flexWrap: "wrap",
+  gap: "10px",
+  padding: "20px 20px 10px",
+  "@media (min-width: 800px)": { padding: "30px 30px 10px" },
+});
+
+const PushRight = styled("div")({ marginLeft: "auto" });
+
+const TableRoot = styled("table")(({ theme }) => ({
+  width: "100%",
+  borderCollapse: "collapse",
+  fontSize: "14px",
+  lineHeight: "20px",
+  color: theme.text.initial,
+  "& th": {
+    textAlign: "left",
+    fontWeight: theme.fontWeights.bold,
+    padding: "10px 0.75em",
+    borderBottom: `${theme.borderWidths.thin} solid ${theme.border.default}`,
+  },
+  "& td": { padding: "10px 0.75em" },
+  "& th:first-of-type, & td:first-of-type": { paddingLeft: "20px" },
+  "& th:last-of-type, & td:last-of-type": { paddingRight: "20px" },
+  "@media (min-width: 800px)": {
+    tableLayout: "fixed",
+    "& th:last-of-type, & td:last-of-type": { paddingRight: "30px" },
+  },
+}));
+
+const ParentRow = styled("tr")(({ theme }) => ({
+  cursor: "pointer",
+  "&:nth-of-type(odd)": { backgroundColor: theme.background.primary },
+  "&:hover": { backgroundColor: alpha(theme.palette.primary.main, 0.07) },
+}));
+
+const ChildRow = styled("tr")(({ theme }) => ({
+  backgroundColor: alpha(theme.palette.primary.main, 0.04),
+}));
+
 const ExpandButton = styled("button")(({ theme }) => ({
+  float: "left",
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
   width: "20px",
   height: "20px",
   padding: 0,
-  marginRight: "6px",
+  marginLeft: "-12px",
+  marginRight: "4px",
   border: "none",
   background: "transparent",
   cursor: "pointer",
   color: theme.text.secondary,
-  verticalAlign: "middle",
   "&:hover": { color: theme.text.initial },
+  "@media (min-width: 800px)": { marginLeft: "-24px" },
 }));
 
+const RowTitle = styled("span")(({ theme }) => ({
+  fontWeight: theme.fontWeights.bold,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+  display: "block",
+}));
+
+const Muted = styled("span")(({ theme }) => ({ color: theme.text.secondary }));
+
 const HelpLink = styled("a")(({ theme }) => ({
-  color: theme.text.primary,
+  color: theme.palette.primary.main,
   textDecoration: "none",
   "&:hover": { textDecoration: "underline" },
+}));
+
+const Footer = styled("div")(({ theme }) => ({
+  display: "flex",
+  justifyContent: "space-between",
+  fontSize: "14px",
+  color: theme.text.secondary,
+  padding: "10px 20px 20px",
+  "@media (min-width: 800px)": { padding: "10px 30px 30px" },
 }));
 
 const fmtDate = (iso: string | null) =>
@@ -80,8 +135,8 @@ export function ViolationsTable({
   }
 
   return (
-    <Flex gap={1.5}>
-      <Flex flexDirection="row" alignItems="center" flexWrap="wrap" gap={1.5}>
+    <div>
+      <Toolbar>
         <SearchInput
           value={search}
           onChange={onSearchChange}
@@ -96,7 +151,7 @@ export function ViolationsTable({
         >
           Download CSV
         </Button>
-        <Flex flexDirection="row" ml="auto">
+        <PushRight>
           <ToggleButtonGroup
             size="sm"
             value={groupBy}
@@ -112,33 +167,31 @@ export function ViolationsTable({
             <ToggleButton value="test">Tests</ToggleButton>
             <ToggleButton value="rule">Rules</ToggleButton>
           </ToggleButtonGroup>
-        </Flex>
-      </Flex>
+        </PushRight>
+      </Toolbar>
 
-      <TableContainer>
-        <Table size="sm" role="treegrid" aria-label={`Accessibility violations by ${groupBy}`}>
-          <TableHead>
-            <TableRow>
-              <TableCell>{groupBy === "test" ? "Test" : "Rule"}</TableCell>
-              <TableCell align="right">Violations</TableCell>
-              <TableCell>Last Updated</TableCell>
-              <TableCell style={{ width: "150px" }}>User Impact</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
+      <div style={{ overflowX: "auto" }}>
+        <TableRoot role="treegrid" aria-label={`Accessibility violations by ${groupBy}`}>
+          <thead>
+            <tr>
+              <th>{groupBy === "test" ? "Test" : "Rule"}</th>
+              <th style={{ width: "110px" }}>Violations</th>
+              <th style={{ width: "140px" }}>Last Updated</th>
+              <th style={{ width: "150px" }}>User Impact</th>
+            </tr>
+          </thead>
+          <tbody>
             {rows.map((row) => {
               const isOpen = expanded.has(row.key);
               return (
                 <Fragment key={row.key}>
-                  <TableRow
+                  <ParentRow
                     role="row"
                     aria-level={1}
                     aria-expanded={isOpen}
-                    isHoverable
                     onClick={() => toggle(row.key)}
-                    style={{ cursor: "pointer" }}
                   >
-                    <TableCell>
+                    <td>
                       <ExpandButton
                         aria-label={isOpen ? "Collapse" : "Expand"}
                         onClick={(e) => {
@@ -146,74 +199,68 @@ export function ViolationsTable({
                           toggle(row.key);
                         }}
                       >
-                        <Icon name={isOpen ? "expand_less" : "expand_more"} size="0.9rem" />
+                        <Icon name={isOpen ? "expand_less" : "expand_more"} size="14px" color="inherit" />
                       </ExpandButton>
-                      <Typography as="span" variant="body2" fontWeight="bold">
-                        {row.title}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">{row.violations}</TableCell>
-                    <TableCell>
-                      <Typography variant="caption" color="secondary">
-                        {fmtDate(row.lastChangedAt)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{row.impact && <ImpactPill impact={row.impact} />}</TableCell>
-                  </TableRow>
+                      <RowTitle>{row.title}</RowTitle>
+                    </td>
+                    <td>{row.violations}</td>
+                    <td>
+                      <Muted>{fmtDate(row.lastChangedAt)}</Muted>
+                    </td>
+                    <td>{row.impact && <ImpactPill impact={row.impact} />}</td>
+                  </ParentRow>
                   {isOpen &&
                     row.children.map((child) => (
-                      <TableRow key={`${row.key}:${child.key}`} role="row" aria-level={2}>
-                        <TableCell pl={5}>
-                          <Typography variant="body2" as="div">
-                            {child.helpUrl ?? row.helpUrl ? (
-                              <HelpLink
-                                href={child.helpUrl ?? row.helpUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {child.title} ↗
-                              </HelpLink>
-                            ) : (
-                              child.title
-                            )}
-                          </Typography>
-                          {(child.description ?? row.description) && (
-                            <Typography variant="caption" color="secondary" as="div">
-                              {child.description ?? row.description}
-                            </Typography>
+                      <ChildRow key={`${row.key}:${child.key}`} role="row" aria-level={2}>
+                        <td style={{ paddingLeft: "40px" }}>
+                          {child.helpUrl ?? row.helpUrl ? (
+                            <HelpLink
+                              href={child.helpUrl ?? row.helpUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {child.title} ↗
+                            </HelpLink>
+                          ) : (
+                            child.title
                           )}
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="caption" color="secondary">
+                          {(child.description ?? row.description) && (
+                            <Muted style={{ display: "block", fontSize: "12px", lineHeight: "18px" }}>
+                              {child.description ?? row.description}
+                            </Muted>
+                          )}
+                        </td>
+                        <td>
+                          <Muted>
                             {child.nodes} {child.nodes === 1 ? "element" : "elements"}
-                          </Typography>
-                        </TableCell>
-                        <TableCell />
-                        <TableCell>
+                          </Muted>
+                        </td>
+                        <td />
+                        <td>
                           <ImpactPill impact={child.impact} />
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </ChildRow>
                     ))}
                 </Fragment>
               );
             })}
             {rows.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={4}>
-                  <Typography variant="body2" color="secondary">
-                    {search.trim() ? `No ${noun} match “${search}”.` : "No violations 🎉"}
-                  </Typography>
-                </TableCell>
-              </TableRow>
+              <tr>
+                <td colSpan={4}>
+                  <Muted>{search.trim() ? `No ${noun} match “${search}”.` : "No violations 🎉"}</Muted>
+                </td>
+              </tr>
             )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+          </tbody>
+        </TableRoot>
+      </div>
 
-      <Typography variant="caption" color="secondary">
-        1 – {rows.length} of {total} {noun}
-      </Typography>
-    </Flex>
+      <Footer>
+        <span>
+          1 – {rows.length} of {total} {noun}
+        </span>
+      </Footer>
+    </div>
   );
 }

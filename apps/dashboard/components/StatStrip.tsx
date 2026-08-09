@@ -1,10 +1,43 @@
 "use client";
 
 import { styled } from "@soroush.tech/design-system";
-import { Flex } from "@soroush.tech/design-system/Flex";
-import { Typography } from "@soroush.tech/design-system/Typography";
 
-const Divider = styled("div")(({ theme }) => ({
+const Strip = styled("div")({
+  display: "flex",
+  flexDirection: "column",
+  gap: "10px",
+  "@media (min-width: 800px)": {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "25px",
+  },
+});
+
+const Group = styled("div")({
+  display: "flex",
+  flexDirection: "row",
+  alignItems: "center",
+  gap: "15px",
+});
+
+const Item = styled("div")({ padding: "8px 12px" });
+
+const Value = styled("div")(({ theme }) => ({
+  fontSize: "28px",
+  lineHeight: "28px",
+  fontWeight: theme.fontWeights.normal,
+  color: theme.text.initial,
+  marginBottom: "4px",
+}));
+
+const Label = styled("div")(({ theme }) => ({
+  fontSize: "14px",
+  lineHeight: "20px",
+  color: theme.text.secondary,
+}));
+
+export const StatDivider = styled("div")(({ theme }) => ({
   alignSelf: "stretch",
   width: "1px",
   backgroundColor: theme.border.default,
@@ -15,29 +48,29 @@ export interface StatItem {
   value: React.ReactNode;
 }
 
-/** Hero number + divider + row of secondary stats (usage card, summaries). */
+export function Stat({ label, value }: StatItem) {
+  return (
+    <Item>
+      <Value>{value}</Value>
+      <Label>{label}</Label>
+    </Item>
+  );
+}
+
+/** Reference-style stat strip: 28px figures, labeled, groups split by a
+ *  stretched divider. */
 export function StatStrip({ primary, items }: { primary: StatItem; items: StatItem[] }) {
   return (
-    <Flex flexDirection="row" alignItems="center" flexWrap="wrap" gap={3}>
-      <Flex gap={0.5}>
-        <Typography variant="h3" as="div">
-          {primary.value}
-        </Typography>
-        <Typography variant="body2" color="secondary">
-          {primary.label}
-        </Typography>
-      </Flex>
-      {items.length > 0 && <Divider />}
-      {items.map((item) => (
-        <Flex key={item.label} gap={0.5}>
-          <Typography variant="h5" as="div">
-            {item.value}
-          </Typography>
-          <Typography variant="caption" color="secondary">
-            {item.label}
-          </Typography>
-        </Flex>
-      ))}
-    </Flex>
+    <Strip>
+      <Group>
+        <Stat {...primary} />
+      </Group>
+      {items.length > 0 && <StatDivider />}
+      <Group>
+        {items.map((item) => (
+          <Stat key={item.label} {...item} />
+        ))}
+      </Group>
+    </Strip>
   );
 }
