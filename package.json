@@ -27,18 +27,12 @@
     "typescript": "^5.5.0"
   },
   "pnpm": {
-    "overrides": {
-      "@soroush.tech/styled-system": "5.7.0"
-    },
     "onlyBuiltDependencies": [
       "@prisma/client",
       "@prisma/engines",
       "prisma",
       "esbuild",
       "sharp"
-    ],
-    "patchedDependencies": {
-      "@soroush.tech/design-system": "patches/@soroush.tech__design-system.patch"
-    }
+    ]
   }
 }
