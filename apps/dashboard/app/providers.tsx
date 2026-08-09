@@ -1,25 +1,10 @@
 "use client";
 
-import NextLink from "next/link";
 import { useServerInsertedHTML } from "next/navigation";
 import { useState } from "react";
 import createCache from "@emotion/cache";
-import { CacheProvider, Global, styled } from "@soroush.tech/design-system";
-import { AppBar } from "@soroush.tech/design-system/AppBar";
-import { Flex } from "@soroush.tech/design-system/Flex";
-import { ThemeProvider } from "@soroush.tech/design-system/ThemeProvider";
-import { Typography } from "@soroush.tech/design-system/Typography";
-import { View } from "@soroush.tech/design-system/View";
-
-const Brand = styled(NextLink)(({ theme }) => ({
-  color: theme.text.initial,
-  textDecoration: "none",
-  fontFamily: theme.fonts.mono,
-  fontWeight: theme.fontWeights.bold,
-  letterSpacing: theme.letterSpacings.wide,
-  fontSize: theme.fontSizes[2],
-  "&:hover": { color: theme.text.primary },
-}));
+import { CacheProvider, Global } from "@soroush.tech/design-system/engine";
+import { ThemeProvider } from "@soroush.tech/design-system/theme";
 
 /** Collects emotion styles rendered on the server and re-injects them into the
  *  HTML stream, so server-rendered markup arrives already styled. */
@@ -74,17 +59,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             },
           })}
         />
-        <AppBar position="sticky" top={0}>
-          <Flex flexDirection="row" alignItems="center" justifyContent="space-between">
-            <Brand href="/">◧ DIFFCHROMA</Brand>
-            <Typography variant="caption" color="secondary" fontFamily="mono">
-              visual regression testing
-            </Typography>
-          </Flex>
-        </AppBar>
-        <View as="main" maxWidth="1200px" mx="auto" p={3}>
-          {children}
-        </View>
+        {children}
       </ThemeProvider>
     </CacheProvider>
   );

@@ -7,6 +7,7 @@ import { Card } from "@soroush.tech/design-system/Card";
 import { Flex } from "@soroush.tech/design-system/Flex";
 import { TextInput } from "@soroush.tech/design-system/TextInput";
 import { Typography } from "@soroush.tech/design-system/Typography";
+import { Main } from "@/components/chrome/Main";
 import { api, setToken } from "@/lib/api";
 
 export default function LoginPage() {
@@ -35,6 +36,7 @@ export default function LoginPage() {
   }
 
   return (
+    <Main>
     <Card variant="bracketBox" title="Sign in" maxWidth="380px" mx="auto" mt={8}>
       <Flex as="form" onSubmit={submit} gap={1.5} mt={1}>
         <TextInput
@@ -63,5 +65,6 @@ export default function LoginPage() {
         </Button>
       </Flex>
     </Card>
+    </Main>
   );
 }

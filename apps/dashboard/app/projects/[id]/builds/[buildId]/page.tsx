@@ -67,7 +67,7 @@ function Pane({ label, url, alt }: { label: string; url: string | null; alt: str
 }
 
 export default function BuildPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id, buildId } = useParams<{ id: string; buildId: string }>();
   const [build, setBuild] = useState<BuildDetail | null>(null);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("ALL");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -75,8 +75,8 @@ export default function BuildPage() {
   const [commentText, setCommentText] = useState("");
 
   const load = useCallback(
-    () => api<BuildDetail>(`/builds/${id}`).then(setBuild).catch(() => undefined),
-    [id],
+    () => api<BuildDetail>(`/builds/${buildId}`).then(setBuild).catch(() => undefined),
+    [buildId],
   );
 
   useEffect(() => {
@@ -143,7 +143,7 @@ export default function BuildPage() {
   return (
     <Flex gap={2}>
       <Typography variant="body2">
-        <NavLink href={`/projects/${build.project.id}`}>← {build.project.name}</NavLink>
+        <NavLink href={`/projects/${id}/builds`}>← builds</NavLink>
       </Typography>
 
       <Flex flexDirection="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>

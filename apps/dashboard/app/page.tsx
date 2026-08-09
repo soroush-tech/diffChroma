@@ -8,6 +8,7 @@ import { Grid } from "@soroush.tech/design-system/Grid";
 import { LinearProgress } from "@soroush.tech/design-system/LinearProgress";
 import { TextInput } from "@soroush.tech/design-system/TextInput";
 import { Typography } from "@soroush.tech/design-system/Typography";
+import { Main } from "@/components/chrome/Main";
 import { NavLink, StatusBadge } from "@/components/ui";
 import { api } from "@/lib/api";
 
@@ -40,15 +41,21 @@ export default function ProjectsPage() {
     await load();
   }
 
-  if (!projects) return <LinearProgress />;
+  if (!projects)
+    return (
+      <Main>
+        <LinearProgress />
+      </Main>
+    );
 
   return (
+    <Main>
     <Flex gap={3}>
       <Typography variant="h3">Projects</Typography>
 
       <Grid gridTemplateColumns="repeat(auto-fill, minmax(240px, 1fr))" gap={1.5}>
         {projects.map((p) => (
-          <NavLink key={p.id} href={`/projects/${p.id}`}>
+          <NavLink key={p.id} href={`/projects/${p.id}/builds`}>
             <Card variant="interactive" height="100%">
               <Flex flexDirection="row" alignItems="center" justifyContent="space-between" gap={1}>
                 <Typography variant="h6" color="initial" noWrap>
@@ -88,5 +95,6 @@ export default function ProjectsPage() {
         </Flex>
       </Card>
     </Flex>
+    </Main>
   );
 }
