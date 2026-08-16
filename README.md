@@ -88,6 +88,30 @@ success/failure when a reviewer approves/rejects in the dashboard.
 The action's `dist/` must be built (`pnpm --filter @diffchroma/action build`) and committed for
 `uses:` to work.
 
+## MCP server
+
+`services/mcp` exposes the build/issue data to AI assistants over the
+[Model Context Protocol](https://modelcontextprotocol.io) (Streamable HTTP, port `4100`,
+endpoint `/mcp`). "Release" maps to a **build**; "issues" are its accessibility violations
+and visual diffs.
+
+```sh
+pnpm dev:mcp   # or it starts as part of `pnpm dev`
+```
+
+Auth: when `MCP_TOKEN` is set, `/mcp` requires `Authorization: Bearer <token>`; when empty
+the endpoint is **unauthenticated** (local dev only — a startup warning reminds you). The
+docker compose `app` profile always sets a token.
+
+Read-only tools: `list_projects`, `list_builds` (per-release diff counts + total a11y
+violations), `get_build`, `get_build_issues` (a11y violations grouped by rule or story,
+plus new/changed snapshots), `find_builds_by_rule` (which releases violate a given axe
+rule), `get_a11y_summary`.
+
+Claude Code picks the server up automatically from the committed `.mcp.json` (approve it
+when prompted). `${MCP_PORT}`/`${MCP_TOKEN}` expand from your shell environment, not from
+`.env`. Example prompt: *"Which a11y issues shipped in build 12 of web?"*
+
 ## Production notes
 
 - Point `S3_*` at AWS S3 or Cloudflare R2 (set `S3_FORCE_PATH_STYLE=false` for AWS).
