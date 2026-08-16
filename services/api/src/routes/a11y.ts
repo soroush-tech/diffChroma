@@ -9,7 +9,7 @@ import {
   sinceDate,
   toWireImpact,
   type WireImpact,
-} from "../lib/a11y.js";
+} from "@diffchroma/shared/a11y";
 import { getProjectForUser } from "./dashboard.js";
 
 /** Builds whose render phase completed — audits exist and are final. */
