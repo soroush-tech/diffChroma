@@ -7,7 +7,7 @@ import {
   toWireImpact,
   worstImpact,
   type AuditInput,
-} from "./a11y.js";
+} from "@diffchroma/shared/a11y";
 
 const violation = (over: Partial<AuditInput["violations"][number]>) => ({
   ruleId: "color-contrast",
