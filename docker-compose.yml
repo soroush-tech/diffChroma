@@ -150,6 +150,23 @@ services:
     depends_on:
       - api
 
+  mcp:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: services/mcp/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://diffchroma:diffchroma@postgres:5432/diffchroma
+      MCP_PORT: "4100"
+      MCP_TOKEN: dev-mcp-token-change-me
+    ports:
+      - "4100:4100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_started
+
 volumes:
   rabbitmq-data:
   postgres-data:

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "diffchroma": {
+      "type": "http",
+      "url": "http://localhost:${MCP_PORT:-4100}/mcp",
+      "headers": {
+        "Authorization": "Bearer ${MCP_TOKEN:-}"
+      }
+    }
+  }
+}

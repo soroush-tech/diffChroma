@@ -2,6 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "@soroush.tech/design-system/Button";
+import { Card } from "@soroush.tech/design-system/Card";
+import { Flex } from "@soroush.tech/design-system/Flex";
+import { TextInput } from "@soroush.tech/design-system/TextInput";
+import { Typography } from "@soroush.tech/design-system/Typography";
+import { Main } from "@/components/chrome/Main";
 import { api, setToken } from "@/lib/api";
 
 export default function LoginPage() {
@@ -30,28 +36,35 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="card" style={{ maxWidth: 380, margin: "80px auto" }}>
-      <h2>Sign in</h2>
-      <form onSubmit={submit} style={{ display: "grid", gap: 12 }}>
-        <input
+    <Main>
+    <Card variant="bracketBox" title="Sign in" maxWidth="380px" mx="auto" mt={8}>
+      <Flex as="form" onSubmit={submit} gap={1.5} mt={1}>
+        <TextInput
           type="email"
           placeholder="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          fullWidth
         />
-        <input
+        <TextInput
           type="password"
           placeholder="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          fullWidth
         />
-        {error && <div style={{ color: "var(--red)", fontSize: 14 }}>{error}</div>}
-        <button type="submit" disabled={busy}>
-          {busy ? "Signing in…" : "Sign in"}
-        </button>
-      </form>
-    </div>
+        {error && (
+          <Typography variant="body2" color="error">
+            {error}
+          </Typography>
+        )}
+        <Button type="submit" loading={busy} fullWidth>
+          Sign in
+        </Button>
+      </Flex>
+    </Card>
+    </Main>
   );
 }

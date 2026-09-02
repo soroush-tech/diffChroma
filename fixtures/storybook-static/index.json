@@ -19,6 +19,18 @@
       "name": "Default",
       "type": "story"
     },
+    "form--broken": {
+      "id": "form--broken",
+      "title": "Form",
+      "name": "Broken, on purpose",
+      "type": "story"
+    },
+    "theme-appbar--default": {
+      "id": "theme-appbar--default",
+      "title": "Theme/AppBar",
+      "name": "Default",
+      "type": "story"
+    },
     "intro--docs": {
       "id": "intro--docs",
       "title": "Intro",

@@ -1,7 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Button } from "@soroush.tech/design-system/Button";
+import { Card } from "@soroush.tech/design-system/Card";
+import { Flex } from "@soroush.tech/design-system/Flex";
+import { Grid } from "@soroush.tech/design-system/Grid";
+import { CardGridSkeleton } from "@/components/Skeletons";
+import { TextInput } from "@soroush.tech/design-system/TextInput";
+import { Typography } from "@soroush.tech/design-system/Typography";
+import { Main } from "@/components/chrome/Main";
+import { NavLink, StatusBadge } from "@/components/ui";
 import { api } from "@/lib/api";
 
 interface ProjectRow {
@@ -33,33 +41,60 @@ export default function ProjectsPage() {
     await load();
   }
 
-  if (!projects) return <p className="muted">Loading…</p>;
+  if (!projects)
+    return (
+      <Main>
+        <CardGridSkeleton />
+      </Main>
+    );
 
   return (
-    <>
-      <h2>Projects</h2>
-      <div className="grid">
-        {projects.map((p) => (
-          <Link key={p.id} href={`/projects/${p.id}`} className="card">
-            <div className="row" style={{ justifyContent: "space-between" }}>
-              <strong style={{ color: "var(--text)" }}>{p.name}</strong>
-              {p.latestBuild && <span className={`badge ${p.latestBuild.status}`}>{p.latestBuild.status}</span>}
-            </div>
-            <p className="muted">
-              {p.repoFullName ?? "no repo linked"} · {p.buildCount} builds
-            </p>
-          </Link>
-        ))}
-      </div>
+    <Main>
+    <Flex gap={3}>
+      <Typography variant="h3">Projects</Typography>
 
-      <div className="card" style={{ marginTop: 24, maxWidth: 480 }}>
-        <h3>New project</h3>
-        <form onSubmit={createProject} style={{ display: "grid", gap: 10 }}>
-          <input placeholder="name" value={name} onChange={(e) => setName(e.target.value)} required />
-          <input placeholder="github repo (owner/name, optional)" value={repo} onChange={(e) => setRepo(e.target.value)} />
-          <button type="submit">Create</button>
-        </form>
-      </div>
-    </>
+      <Grid gridTemplateColumns="repeat(auto-fill, minmax(240px, 1fr))" gap={1.5}>
+        {projects.map((p) => (
+          <NavLink key={p.id} href={`/projects/${p.id}/builds`}>
+            <Card variant="interactive" height="100%">
+              <Flex flexDirection="row" alignItems="center" justifyContent="space-between" gap={1}>
+                <Typography variant="h6" color="initial" noWrap>
+                  {p.name}
+                </Typography>
+                {p.latestBuild && <StatusBadge status={p.latestBuild.status} />}
+              </Flex>
+              <Typography variant="body2" color="secondary" mt={1}>
+                {p.repoFullName ?? "no repo linked"} · {p.buildCount} builds
+              </Typography>
+            </Card>
+          </NavLink>
+        ))}
+        {projects.length === 0 && (
+          <Typography variant="body2" color="secondary">
+            No projects yet — create one below.
+          </Typography>
+        )}
+      </Grid>
+
+      <Card variant="bracketBox" title="New project" maxWidth="480px">
+        <Flex as="form" onSubmit={createProject} gap={1.5} mt={1}>
+          <TextInput
+            placeholder="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            fullWidth
+          />
+          <TextInput
+            placeholder="github repo (owner/name, optional)"
+            value={repo}
+            onChange={(e) => setRepo(e.target.value)}
+            fullWidth
+          />
+          <Button type="submit">Create</Button>
+        </Flex>
+      </Card>
+    </Flex>
+    </Main>
   );
 }

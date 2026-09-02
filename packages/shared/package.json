@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./a11y": "./src/a11y.ts",
+    "./csv": "./src/csv.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

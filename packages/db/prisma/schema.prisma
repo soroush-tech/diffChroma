@@ -38,6 +38,7 @@ model Project {
   installationId       Int?
   maxDiffPixelRatio    Float      @default(0)
   autoAcceptFirstBuild Boolean    @default(true)
+  a11yEnabled          Boolean    @default(true)
   createdAt            DateTime   @default(now())
   builds               Build[]
   baselines            Baseline[]
@@ -74,6 +75,7 @@ model Build {
   createdAt       DateTime    @default(now())
   completedAt     DateTime?
   snapshots       Snapshot[]
+  a11yAudits      A11yAudit[]
 
   @@unique([projectId, number])
 }
@@ -117,6 +119,50 @@ model Baseline {
   updatedAt  DateTime @updatedAt
 
   @@unique([projectId, storyId, viewport])
+}
+
+enum A11yImpact {
+  CRITICAL
+  SERIOUS
+  MODERATE
+  MINOR
+}
+
+model A11yAudit {
+  id             String          @id @default(cuid())
+  buildId        String
+  build          Build           @relation(fields: [buildId], references: [id], onDelete: Cascade)
+  storyId        String
+  componentTitle String
+  storyName      String
+  storyTitle     String
+  viewport       String
+  violationCount Int             @default(0)
+  nodeCount      Int             @default(0)
+  worstImpact    A11yImpact?
+  fingerprint    String
+  lastChangedAt  DateTime
+  error          String?
+  createdAt      DateTime        @default(now())
+  violations     A11yViolation[]
+
+  @@unique([buildId, storyId])
+  @@index([storyId])
+}
+
+model A11yViolation {
+  id          String     @id @default(cuid())
+  auditId     String
+  audit       A11yAudit  @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  ruleId      String
+  impact      A11yImpact
+  description String
+  helpUrl     String
+  nodeCount   Int
+  targets     Json?
+
+  @@index([auditId])
+  @@index([ruleId])
 }
 
 model Comment {

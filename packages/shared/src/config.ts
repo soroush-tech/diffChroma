@@ -34,6 +34,9 @@ const envSchema = z.object({
   DASHBOARD_URL: z.string().default("http://localhost:3000"),
   JWT_SECRET: z.string().default("dev-secret-change-me"),
 
+  MCP_PORT: z.coerce.number().default(4100),
+  MCP_TOKEN: z.string().optional(),
+
   SEED_ADMIN_EMAIL: z.string().default("admin@example.com"),
   SEED_ADMIN_PASSWORD: z.string().default("admin123"),
   SEED_CUSTOMER_NAME: z.string().default("Acme"),
